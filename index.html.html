@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard Controle de Circuitos</title>
-
 <style>
 *{
 margin:0;
@@ -12,231 +11,207 @@ padding:0;
 box-sizing:border-box;
 font-family:Segoe UI,sans-serif;
 }
-
 body{
 background:#0f172a;
-color:#fff;
+color:white;
 padding:20px;
 }
-
 .container{
 max-width:1400px;
 margin:auto;
 }
-
 h1{
 text-align:center;
-color:#38bdf8;
 margin-bottom:20px;
+color:#38bdf8;
 }
-
 .topo{
 display:flex;
 gap:10px;
 flex-wrap:wrap;
 margin-bottom:20px;
 }
-
 input,select{
 padding:10px;
 border:none;
 border-radius:8px;
 background:#1e293b;
-color:#fff;
+color:white;
 }
-
 button{
 padding:10px 15px;
 border:none;
 border-radius:8px;
 cursor:pointer;
 background:#0284c7;
-color:#fff;
+color:white;
 }
-
 button:hover{
 background:#0369a1;
 }
-
 .cards{
 display:grid;
 grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
 gap:15px;
 margin-bottom:20px;
 }
-
 .card{
 background:#1e293b;
 border-radius:10px;
 padding:15px;
 text-align:center;
 }
-
-.card h2{
-margin-top:10px;
-}
-
 .meta-box{
 background:#1e293b;
 padding:15px;
 border-radius:10px;
 margin-bottom:20px;
 }
-
 .barra{
-height:25px;
+height:24px;
 background:#334155;
 border-radius:20px;
 overflow:hidden;
 margin-top:10px;
 }
-
 #barraMeta{
 height:100%;
 width:0%;
 background:linear-gradient(90deg,#22c55e,#16a34a);
 transition:.3s;
 }
-
-#pesquisa{
-width:100%;
+.filtros{
+display:flex;
+gap:10px;
+flex-wrap:wrap;
 margin-bottom:15px;
 }
-
 table{
 width:100%;
 border-collapse:collapse;
 background:#1e293b;
 }
-
 th{
 background:#0284c7;
 padding:10px;
 }
-
 td{
 padding:8px;
 border:1px solid #334155;
 text-align:center;
 }
-
 td input{
 width:100%;
 }
-
 .btnExcluir{
 background:#dc2626;
 }
-
 .btnExcluir:hover{
 background:#b91c1c;
 }
-
 @media(max-width:768px){
-
-.topo{
+.topo,
+.filtros{
 flex-direction:column;
 }
-
-input,select,button{
+input,
+select,
+button{
 width:100%;
 }
-
-table{
-font-size:12px;
-}
-
 }
 </style>
 </head>
-
 <body>
-
 <div class="container">
-
 <h1>📊 Dashboard Controle de Circuitos</h1>
-
 <div class="topo">
-
-<label style="display:flex;align-items:center;gap:5px;">
+<label style="display:flex;align-items:center;gap:5px">
 🎯 Meta
-<input type="number" id="meta" value="20" min="1" style="width:100px;">
+<input
+type="number"
+id="meta"
+min="1"
+value="20"
+style="width:100px">
 </label>
-
 <input
 type="text"
 id="circuito"
 placeholder="Número do Circuito">
-
 <input
 type="text"
 id="tarefa"
 placeholder="Tarefa">
-
 <select id="status">
 <option>Tratado</option>
 <option>Pendente</option>
 </select>
-
 <button onclick="adicionar()">
 ➕ Adicionar
 </button>
-
 <button onclick="exportar()">
 📥 Exportar CSV
 </button>
-
-<button onclick="limparTudo()">
-🗑 Limpar Tudo
+<button onclick="limparDia()">
+🗑 Limpar Dia
 </button>
-
 </div>
-
 <div class="cards">
-
 <div class="card">
 <div>Total</div>
 <h2 id="total">0</h2>
 </div>
-
 <div class="card">
 <div>Tratados</div>
 <h2 id="tratados">0</h2>
 </div>
-
 <div class="card">
 <div>Pendentes</div>
 <h2 id="pendentes">0</h2>
 </div>
-
 <div class="card">
 <div>Produtividade</div>
 <h2 id="produtividade">0%</h2>
 </div>
-
 </div>
-
 <div class="meta-box">
-
-<div style="display:flex;justify-content:space-between;">
+<div style="display:flex;justify-content:space-between">
 <span>🎯 Meta Diária</span>
 <span id="percentualMeta">0%</span>
 </div>
-
 <div class="barra">
 <div id="barraMeta"></div>
 </div>
-
 </div>
-
+<div class="filtros">
 <input
 type="text"
 id="pesquisa"
 placeholder="🔍 Pesquisar"
-onkeyup="filtrar()">
-
+onkeyup="aplicarFiltros()">
+<select
+id="filtroStatus"
+onchange="aplicarFiltros()">
+<option value="">
+Todos Status
+</option>
+<option value="Tratado">
+Tratado
+</option>
+<option value="Pendente">
+Pendente
+</option>
+</select>
+<input
+type="date"
+id="historico"
+onchange="carregarHistorico()">
+<button onclick="hoje()">
+📅 Hoje
+</button>
+</div>
 <table>
-
 <thead>
 <tr>
 <th>Data/Hora</th>
@@ -246,314 +221,274 @@ onkeyup="filtrar()">
 <th>Ação</th>
 </tr>
 </thead>
-
 <tbody id="lista"></tbody>
-
 </table>
-
 </div>
-
 <script>
-
-function registros(){
-return JSON.parse(localStorage.getItem("circuitos")) || [];
+function dataAtual(){
+return new Date()
+.toISOString()
+.split('T')[0];
 }
-
+function chaveAtual(){
+return "circuitos_" + dataAtual();
+}
+function registros(){
+return JSON.parse(
+localStorage.getItem(
+chaveAtual()
+)
+) || [];
+}
 function salvar(dados){
 localStorage.setItem(
-"circuitos",
+chaveAtual(),
 JSON.stringify(dados)
 );
 }
-
 function adicionar(){
-
-let circuito =
+let circuito=
 document.getElementById("circuito")
-.value.trim()
+.value
+.trim()
 .toUpperCase();
-
 if(!circuito){
-alert("Informe o circuito.");
+alert("Informe o circuito");
 return;
 }
-
-let dados = registros();
-
+let dados=registros();
 dados.push({
-dataHora:new Date().toLocaleString("pt-BR"),
+dataHora:new Date()
+.toLocaleString("pt-BR"),
 circuito:circuito,
-tarefa:document.getElementById("tarefa").value,
-status:document.getElementById("status").value
+tarefa:
+document.getElementById("tarefa")
+.value,
+status:
+document.getElementById("status")
+.value
 });
-
 salvar(dados);
-
 document.getElementById("circuito").value="";
 document.getElementById("tarefa").value="";
-
 carregar();
 }
-
 function editarCampo(indice,campo,valor){
-
-let dados = registros();
-
+let dados=registros();
 if(campo==="circuito"){
 valor=valor.toUpperCase();
 }
-
 dados[indice][campo]=valor;
-
 salvar(dados);
 }
-
 function alterarStatus(indice,status){
-
-let dados = registros();
-
+let dados=registros();
 dados[indice].status=status;
-
 salvar(dados);
-
 carregar();
 }
-
 function excluir(indice){
-
 if(!confirm("Excluir registro?")){
 return;
 }
-
-let dados = registros();
-
+let dados=registros();
 dados.splice(indice,1);
-
 salvar(dados);
-
 carregar();
 }
-
-function limparTudo(){
-
-if(!confirm("Excluir todos os registros?")){
+function limparDia(){
+if(!confirm("Excluir todos os registros do dia atual?")){
 return;
 }
-
-localStorage.removeItem("circuitos");
-
+localStorage.removeItem(
+chaveAtual()
+);
 carregar();
 }
-
-function carregar(){
-
-let dados = registros();
-
+function escapeHtml(valor){
+return String(valor ?? "")
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/\"/g,"&quot;")
+.replace(/'/g,"&#39;");
+}
+function renderizar(dados){
 let html="";
-
 let tratados=0;
 let pendentes=0;
-
 dados.forEach((r,index)=>{
-
-if(r.status==="Tratado"){
-tratados++;
-}
-
-if(r.status==="Pendente"){
-pendentes++;
-}
-
+if(r.status==="Tratado") tratados++;
+if(r.status==="Pendente") pendentes++;
 html+=`
 <tr>
-
-<td>${r.dataHora}</td>
-
+<td>${escapeHtml(r.dataHora)}</td>
 <td>
 <input
-value="${r.circuito}"
+value="${escapeHtml(r.circuito)}"
 onchange="editarCampo(${index},'circuito',this.value)">
 </td>
-
 <td>
 <input
-value="${r.tarefa || ''}"
+value="${escapeHtml(r.tarefa || '')}"
 onchange="editarCampo(${index},'tarefa',this.value)">
 </td>
-
 <td>
-
-<select onchange="alterarStatus(${index},this.value)">
-
+<select
+onchange="alterarStatus(${index},this.value)">
 <option value="Tratado"
 ${r.status==="Tratado" ? "selected" : ""}>
 Tratado
 </option>
-
 <option value="Pendente"
 ${r.status==="Pendente" ? "selected" : ""}>
 Pendente
 </option>
-
 </select>
-
 </td>
-
 <td>
-
 <button
 class="btnExcluir"
 onclick="excluir(${index})">
 Excluir
 </button>
-
 </td>
-
 </tr>
 `;
 });
-
-document.getElementById("lista").innerHTML=html;
-
-document.getElementById("total").innerText=dados.length;
-document.getElementById("tratados").innerText=tratados;
-document.getElementById("pendentes").innerText=pendentes;
-
+document.getElementById("lista")
+.innerHTML=html;
+document.getElementById("total")
+.innerText=dados.length;
+document.getElementById("tratados")
+.innerText=tratados;
+document.getElementById("pendentes")
+.innerText=pendentes;
 let meta=
 parseInt(
-document.getElementById("meta").value
-)||20;
-
-let produtividade=
-meta>0
-? (tratados/meta)*100
-:0;
-
+document.getElementById("meta")
+.value
+) || 20;
+let produtividade = meta > 0 ? ((tratados / meta) * 100) : 0;
 document.getElementById("produtividade")
 .innerText=
 produtividade.toFixed(1)+"%";
-
 document.getElementById("percentualMeta")
 .innerText=
 produtividade.toFixed(1)+"%";
-
 document.getElementById("barraMeta")
 .style.width=
-Math.min(produtividade,100)+"%";
-
-localStorage.setItem(
-"metaCircuitos",
-meta
+Math.min(Math.max(produtividade,0),100)+"%";
+}
+function carregar(){
+renderizar(registros());
+}
+function aplicarFiltros(){
+let pesquisa=
+document.getElementById("pesquisa")
+.value
+.toLowerCase();
+let statusFiltro=
+document.getElementById("filtroStatus")
+.value;
+document
+.querySelectorAll("#lista tr")
+.forEach(linha=>{
+let circuito=
+linha.cells[1]
+.querySelector("input")
+.value
+.toLowerCase();
+let tarefa=
+linha.cells[2]
+.querySelector("input")
+.value
+.toLowerCase();
+let status=
+linha.cells[3]
+.querySelector("select")
+.value;
+let exibir=
+(
+circuito.includes(pesquisa)
+||
+tarefa.includes(pesquisa)
+)
+&&
+(
+!statusFiltro
+||
+status===statusFiltro
 );
+linha.style.display=
+exibir ? "" : "none";
+});
 }
-
-function filtrar() {
-
-    let texto =
-    document.getElementById("pesquisa")
-    .value
-    .toLowerCase()
-    .trim();
-
-    let linhas =
-    document.querySelectorAll("#lista tr");
-
-    linhas.forEach(linha => {
-
-        let circuito =
-        linha.querySelector("td:nth-child(2) input")
-        ?.value.toLowerCase() || "";
-
-        let tarefa =
-        linha.querySelector("td:nth-child(3) input")
-        ?.value.toLowerCase() || "";
-
-        let status =
-        linha.querySelector("select")
-        ?.value.toLowerCase() || "";
-
-        if (
-            circuito.includes(texto) ||
-            tarefa.includes(texto) ||
-            status.includes(texto)
-        ) {
-            linha.style.display = "";
-        } else {
-            linha.style.display = "none";
-        }
-
-    });
-
-}
-function exportar(){
-
-let dados=registros();
-
-if(dados.length===0){
-alert("Nenhum registro.");
+function carregarHistorico(){
+let data=
+document.getElementById("historico")
+.value;
+if(!data){
+carregar();
 return;
 }
-
+let dados=
+JSON.parse(
+localStorage.getItem(
+"circuitos_" + data
+)
+) || [];
+renderizar(dados);
+}
+function hoje(){
+document.getElementById(
+"historico"
+).value="";
+carregar();
+}
+function exportar(){
+let dados=registros();
+if(!dados.length){
+alert("Nenhum registro");
+return;
+}
 let csv=
 "\uFEFFData/Hora;Circuito;Tarefa;Status\n";
-
 dados.forEach(r=>{
-
-csv+=
-`${r.dataHora};${r.circuito};"${r.tarefa || ""}";${r.status}\n`;
-
+let tarefa = String(r.tarefa ?? '').replace(/"/g,'""');
+let circuito = String(r.circuito ?? '').replace(/"/g,'""');
+csv += `${r.dataHora};"${circuito}";"${tarefa}";${r.status}\n`;
 });
-
 let blob=
 new Blob(
 [csv],
-{type:"text/csv;charset=utf-8;"}
+{
+type:"text/csv;charset=utf-8;"
+}
 );
-
 let link=
 document.createElement("a");
-
 link.href=
 URL.createObjectURL(blob);
-
 link.download=
-"circuitos.csv";
-
+"Circuitos_" +
+dataAtual() +
+".csv";
 link.click();
 }
-
-document.getElementById("meta").value=
-localStorage.getItem("metaCircuitos") || 20;
-
 document.getElementById("meta")
-.addEventListener(
-"input",
-carregar
+.value=
+localStorage.getItem("metaCircuitos")
+|| 20;
+document.getElementById("meta")
+.addEventListener("input",()=>{
+localStorage.setItem(
+"metaCircuitos",
+document.getElementById("meta").value
 );
-
-document.getElementById("circuito")
-.addEventListener(
-"keypress",
-function(e){
-if(e.key==="Enter"){
-adicionar();
-}
-}
-);
-
-document.getElementById("tarefa")
-.addEventListener(
-"keypress",
-function(e){
-if(e.key==="Enter"){
-adicionar();
-}
-}
-);
-
 carregar();
-
+});
+carregar();
 </script>
-
 </body>
 </html>
